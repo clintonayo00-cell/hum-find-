@@ -1,0 +1,90 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#111111">
+  <title>HumFind</title>
+  <style>
+    body {
+      margin: 0;
+      background: #111;
+      color: white;
+      font-family: -apple-system, sans-serif;
+      text-align: center;
+      padding: 60px 20px;
+    }
+    h1 { font-size: 42px; }
+    p { color: #aaa; }
+    button {
+      margin-top: 35px;
+      width: 160px;
+      height: 160px;
+      border: 0;
+      border-radius: 50%;
+      font-size: 52px;
+      background: white;
+      cursor: pointer;
+    }
+    #status { margin-top: 25px; }
+  </style>
+</head>
+<body>
+  <h1>HumFind 🎵</h1>
+  <p>Hum it. Find it.</p>
+  <button id="mic">🎙️</button>
+  <p id="status">Tap to start humming</p>
+
+  <script>
+    const button = document.getElementById('mic');
+    const status = document.getElementById('status');
+    let recorder;
+    let chunks = [];
+
+    button.addEventListener('click', async () => {
+      if (recorder && recorder.state === 'recording') {
+        recorder.stop();
+        button.textContent = '🎙️';
+        status.textContent = 'Recording stopped.';
+        return;
+      }
+
+      try {
+        const stream = await navigator.mediaDevices
+          .getUserMedia({ audio: true });
+
+        chunks = [];
+        recorder = new MediaRecorder(stream);
+
+        recorder.ondataavailable = event => {
+          if (event.data.size) chunks.push(event.data);
+        };
+
+        recorder.onstop = () => {
+          const audio = new Blob(chunks, {
+            type: recorder.mimeType
+          });
+          const url = URL.createObjectURL(audio);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = 'humfind-recording.webm';
+          link.textContent = 'Download your recording';
+          status.replaceChildren(
+            document.createTextNode('Recording ready. '),
+            link
+          );
+          stream.getTracks().forEach(track => track.stop());
+        };
+
+        recorder.start();
+        button.textContent = '⏹️';
+        status.textContent = 'Listening… hum your song!';
+      } catch (error) {
+        status.textContent =
+          'Microphone unavailable. Open the published site in Safari and allow microphone access.';
+      }
+    });
+  </script>
+</body>
+</html>
